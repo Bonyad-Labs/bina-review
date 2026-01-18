@@ -1,0 +1,63 @@
+name: 'Bina Static Analysis'
+description: 'Deterministic, rule-based static analysis for Python code.'
+author: 'Bina Team'
+branding:
+  icon: 'eye'
+  color: 'blue'
+
+inputs:
+  path:
+    description: 'Path to scan'
+    required: false
+    default: '.'
+  fail_on_high:
+    description: 'Fail CI if HIGH severity issues are found'
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install Bina
+      run: pip install .
+      shell: bash
+
+    - name: Run Bina
+      run: |
+        # Run bina and capture output
+        bina check ${{ inputs.path }} --json > bina_report.json
+        
+        # Parse JSON and create annotations (simple bash/python script inline)
+        python3 -c "
+import json
+import sys
+
+try:
+    with open('bina_report.json') as f:
+        findings = json.load(f)
+
+    fail_workflow = False
+    for f in findings:
+        severity = f['severity']
+        # Map to GitHub annotation levels: notice, warning, failure
+        level = 'notice'
+        if severity == 'MEDIUM':
+            level = 'warning'
+        elif severity == 'HIGH':
+            level = 'error'
+            if '${{ inputs.fail_on_high }}' == 'true':
+                fail_workflow = True
+
+        print(f'::{level} file={f['file']},line={f['line']},col={f['column']},title={f['rule_id']}::{f['message']}')
+
+    if fail_workflow:
+        sys.exit(1)
+except Exception as e:
+    print(e)
+"
+      shell: bash

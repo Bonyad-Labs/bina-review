@@ -1,0 +1,21 @@
+name: Bina Analysis
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  bina-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Since Bina is in this repo, we can reference it locally.
+      # If it were a separate action, you would use 'uses: owner/repo@version'
+      - name: Run Bina Check
+        uses: ./
+        with:
+          path: .
+          fail_on_high: true
