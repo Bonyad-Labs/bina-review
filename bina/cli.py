@@ -42,13 +42,15 @@ def check(path, json_output):
         table.add_column("Rule", style="magenta")
         table.add_column("Severity", style="red")
         table.add_column("Message", style="white")
+        table.add_column("Suggestion", style="green")
 
         for f in findings:
             table.add_row(
                 f"{f.file}:{f.line}",
                 f.rule_id,
                 f.severity.value,
-                f.message
+                f.message,
+                f.suggestion or ""
             )
         
         console.print(table)

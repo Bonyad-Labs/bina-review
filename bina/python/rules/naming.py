@@ -53,7 +53,8 @@ def check_misleading_names(tree: ast.AST, filename: str) -> List[Finding]:
                         severity=Severity.LOW,
                         file=filename,
                         line=node.lineno,
-                        column=node.col_offset
+                        column=node.col_offset,
+                        suggestion="Ensure function returns a value or rename it."
                     ))
 
             # 3. 'set_...' should probably not return something? (Debatable, builder pattern)

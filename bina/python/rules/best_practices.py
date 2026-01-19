@@ -21,7 +21,8 @@ def check_mutable_defaults(tree: ast.AST, filename: str) -> List[Finding]:
                         severity=Severity.MEDIUM,
                         file=filename,
                         line=default.lineno,
-                        column=default.col_offset
+                        column=default.col_offset,
+                        suggestion="Change default to None and set it to [] inside the function."
                     ))
     return findings
 
@@ -54,7 +55,8 @@ def check_silent_exception(tree: ast.AST, filename: str) -> List[Finding]:
                             severity=Severity.HIGH,
                             file=filename,
                             line=node.lineno,
-                            column=node.col_offset
+                            column=node.col_offset,
+                            suggestion="Add a logging statement or specific exception handling logic."
                         ))
     return findings
 
@@ -119,7 +121,8 @@ def check_resource_cleanup(tree: ast.AST, filename: str) -> List[Finding]:
                         severity=Severity.MEDIUM,
                         file=filename,
                         line=node.lineno,
-                        column=node.col_offset
+                        column=node.col_offset,
+                        suggestion="Wrap the open() call in a 'with' statement."
                     ))
             self.generic_visit(node)
             

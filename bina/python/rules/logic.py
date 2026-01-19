@@ -35,7 +35,8 @@ def check_infinite_loop(tree: ast.AST, filename: str) -> List[Finding]:
                         severity=Severity.HIGH,
                         file=filename,
                         line=node.lineno,
-                        column=node.col_offset
+                        column=node.col_offset,
+                        suggestion="Add a break statement or a conditional exit."
                     ))
     return findings
 
@@ -75,7 +76,8 @@ def check_sorted_unique_promise(tree: ast.AST, filename: str) -> List[Finding]:
                     severity=Severity.LOW,
                     file=filename,
                     line=node.lineno,
-                    column=node.col_offset
+                    column=node.col_offset,
+                    suggestion=f"Implement {'sorting' if claims_sorted else 'uniqueness'} logic explicitly."
                 ))
     return findings
 
@@ -143,7 +145,8 @@ def check_unchecked_none(tree: ast.AST, filename: str) -> List[Finding]:
                                 severity=Severity.HIGH,
                                 file=filename,
                                 line=subnode.lineno,
-                                column=subnode.col_offset
+                                column=subnode.col_offset,
+                                suggestion=f"Check if '{subnode.value.id}' is None before accessing attributes."
                             ))
                     elif isinstance(subnode, ast.Subscript) and isinstance(subnode.value, ast.Name):
                         if subnode.value.id in current_dangerous:
@@ -153,7 +156,8 @@ def check_unchecked_none(tree: ast.AST, filename: str) -> List[Finding]:
                                 severity=Severity.HIGH,
                                 file=filename,
                                 line=subnode.lineno,
-                                column=subnode.col_offset
+                                column=subnode.col_offset,
+                                suggestion=f"Check if '{subnode.value.id}' is None before subscripting."
                             ))
                 
                 # 3. Naive guard check
