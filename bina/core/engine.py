@@ -35,6 +35,9 @@ def initialize_worker(custom_rule_paths: List[str]):
     import sys
     from .loader import RuleLoader
     from .registry import RuleRegistry
+    # Ensure built-in rules are registered
+    import bina.python.rules
+    
     for path in custom_rule_paths:
         rules = RuleLoader.load_from_directory(path)
         for rule in rules:
