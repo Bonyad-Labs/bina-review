@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.0] - 2026-01-19
+
+### 🚀 Version 3: Custom Rules API & Open Source
+- **Custom Rules API**: Implement dynamic loading of Python-based rules. Users can now extend Bina without modifying the core codebase.
+- **Unified Rule Model**: Refactored all built-in rules into a class-based `BaseRule` architecture, providing a clean and extensible interface for custom rule developers.
+- **Dynamic Rule Discovery**: Added `RuleLoader` to automatically discover and instantiate rules from user-defined directories.
+- **Improved Engine Architecture**: Updated the analysis engine and worker processes to safely load and execute custom rules in parallel environments.
+- **Official Licensing**: Added Apache License 2.0 to the project.
+
+### 🛠 Architecture
+- **Class-based Rules**: Migration of all legacy function-based rules to the `BaseRule` AST visitor model.
+- **Dynamic Module Management**: Robust `sys.path` handling in `RuleLoader` for safe multiprocessing with dynamically loaded modules.
+
 ## [v0.2.0] - 2026-01-19
 
 ### 🚀 Version 2: Production Ready & Team Adoptable
