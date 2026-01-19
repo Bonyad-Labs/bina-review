@@ -5,7 +5,7 @@ from ..core.registry import RuleRegistry
 
 class PythonAnalyzer:
     @staticmethod
-    def analyze(file_path: str) -> List[Finding]:
+    def analyze(file_path: str, config=None) -> List[Finding]:
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 code = f.read()
@@ -16,12 +16,28 @@ class PythonAnalyzer:
             rules = RuleRegistry.get_rules_for_language("python")
             findings = []
 
+            # Create Context
+            from ..core.models import RuleContext
+            context = RuleContext(filename=file_path, tree=tree, config=config)
+
             for rule in rules:
-                # Basic implementation: pass AST and filename to rule
-                # Rules are expected to return List[Finding]
+                # Check config if provided
+                if config:
+                    if not config.is_rule_enabled(rule.id):
+                        continue
+
+                # Pass context to rule
                 try:
-                    results = rule.check_fn(tree, file_path)
+                    # We need to detect if rule accepts context or old args?
+                    # For V2, we enforce new signature or wrap it.
+                    # Since we control the codebase, we update all rules.
+                    results = rule.check_fn(context)
                     if results:
+                        # Apply severity overrides
+                        if config:
+                            severity = config.get_rule_severity(rule.id, default_severity=rule.severity)
+                            for r in results:
+                                r.severity = severity
                         findings.extend(results)
                 except Exception as e:
                     # Generic error handling to prevent one rule from crashing everything

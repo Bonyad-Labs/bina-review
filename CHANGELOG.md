@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.2.0] - 2026-01-19
+
+### 🚀 Version 2: Production Ready & Team Adoptable
+
+- **Project Configuration (`bina.yaml`)**: Robust support for project-level configuration. Enable/disable rules, override severities, and exclude specific paths using glob patterns.
+- **Baseline Mode**: Facilitate gradual adoption by ignoring existing technical debt. Generate a baseline report with `--generate-baseline` and focus only on NEW issues in subsequent runs.
+- **Lightweight Control-Flow Awareness**: Significantly reduced false positives in `L003` (Unchecked None) and `L001` (Infinite Loop) by recognizing guard clauses, early returns, and loop breaks.
+- **High-Performance Analysis**: Parallel file processing using `multiprocessing` ensures fast execution even on larger codebases.
+- **Enhanced GitHub Integration**: Improved PR feedback with summary comments instead of excessive annotations. Rule findings are now grouped and presented clearly in the PR timeline.
+
+### 🛠 Architecture
+- **RuleContext API**: Refactored internal rule engine to pass a rich `RuleContext` (AST, Filename, Config) to rules, enabling more sophisticated analysis.
+- **Modular Integrations**: Clean separation of GitHub-specific logic into `bina.integrations`.
+
 ## [v0.1.0] - 2026-01-18
 
 ### 🚀 Features

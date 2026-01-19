@@ -1,6 +1,6 @@
 import ast
 from typing import List
-from ...core.models import Finding, Severity
+from ...core.models import Finding, Severity, RuleContext
 from ...core.registry import RuleRegistry
 
 @RuleRegistry.register(
@@ -9,8 +9,10 @@ from ...core.registry import RuleRegistry
     severity=Severity.MEDIUM,
     language="python"
 )
-def check_mutable_defaults(tree: ast.AST, filename: str) -> List[Finding]:
+def check_mutable_defaults(context: RuleContext) -> List[Finding]:
     findings = []
+    tree = context.tree
+    filename = context.filename
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
             for default in node.args.defaults:
@@ -32,8 +34,10 @@ def check_mutable_defaults(tree: ast.AST, filename: str) -> List[Finding]:
     severity=Severity.HIGH,
     language="python"
 )
-def check_silent_exception(tree: ast.AST, filename: str) -> List[Finding]:
+def check_silent_exception(context: RuleContext) -> List[Finding]:
     findings = []
+    tree = context.tree
+    filename = context.filename
     for node in ast.walk(tree):
         if isinstance(node, ast.ExceptHandler):
             # Check for bare except or except Exception
@@ -66,8 +70,10 @@ def check_silent_exception(tree: ast.AST, filename: str) -> List[Finding]:
     severity=Severity.MEDIUM,
     language="python"
 )
-def check_resource_cleanup(tree: ast.AST, filename: str) -> List[Finding]:
+def check_resource_cleanup(context: RuleContext) -> List[Finding]:
     findings = []
+    tree = context.tree
+    filename = context.filename
     
     # Simple heuristic: Look for `open()` calls that are NOT part of a With statement.
     # This matches usage like `f = open(...)`

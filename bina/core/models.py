@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 
 class Severity(str, Enum):
     LOW = "LOW"
@@ -29,4 +29,7 @@ class Finding:
 class RuleContext:
     """Context passed to rules during execution."""
     filename: str
-    # Future: configuration, etc.
+    tree: Any  # ast.AST
+    config: Optional[Any] = None  # Config object
+    # Future: control flow state, etc.
+    metadata: Dict[str, Any] = field(default_factory=dict)

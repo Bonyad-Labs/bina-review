@@ -1,6 +1,6 @@
 import ast
 from typing import List
-from ...core.models import Finding, Severity
+from ...core.models import Finding, Severity, RuleContext
 from ...core.registry import RuleRegistry
 
 @RuleRegistry.register(
@@ -9,8 +9,10 @@ from ...core.registry import RuleRegistry
     severity=Severity.LOW,
     language="python"
 )
-def check_misleading_names(tree: ast.AST, filename: str) -> List[Finding]:
+def check_misleading_names(context: RuleContext) -> List[Finding]:
     findings = []
+    tree = context.tree
+    filename = context.filename
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
             name = node.name.lower()

@@ -14,6 +14,16 @@ inputs:
     description: 'Fail CI if HIGH severity issues are found'
     required: false
     default: 'true'
+  config_path:
+    description: 'Path to configuration file'
+    default: 'bina.yaml'
+  baseline_path:
+    description: 'Path to baseline file'
+    default: 'bina-report-baseline.json'
+  token:
+    description: 'GitHub Token for posting comments'
+    required: false
+    default: ${{ github.token }}
 
 runs:
   using: 'composite'
@@ -29,73 +39,48 @@ runs:
 
     - name: Run Bina
       run: |
-        # Run bina and capture output
-        bina check ${{ inputs.path }} --json > bina_report.json
+        # 1. Run Analysis and generate JSON
+        # We always generate JSON for the report step
+        bina check ${{ inputs.path }} \
+          --config ${{ inputs.config_path }} \
+          --baseline ${{ inputs.baseline_path }} \
+          --json > bina_output.json
         
-        # Parse JSON and create annotations
-        python3 - <<EOF
-        import json
-        import sys
-        try:
-            from rich.console import Console
-            from rich.table import Table
-        except ImportError:
-            print("Rich library not found, skipping table output")
-            Console = None
-            Table = None
-
-        try:
-            with open('bina_report.json') as f:
-                findings = json.load(f)
-
-            # Print Rich Table if available
-            if Console and Table:
-                console = Console()
-                if findings:
-                    table = Table(title="Analysis Findings")
-                    table.add_column("File", style="cyan")
-                    table.add_column("Rule", style="magenta")
-                    table.add_column("Severity", style="red")
-                    table.add_column("Message", style="white")
-                    table.add_column("Suggestion", style="green")
-
-                    for f in findings:
-                        table.add_row(
-                            f"{f['file']}:{f['line']}",
-                            f['rule_id'],
-                            f['severity'],
-                            f['message'],
-                            f.get('suggestion') or ""
-                        )
-                    console.print(table)
-                else:
-                    console.print("[bold green]No issues found![/bold green]")
-
-            fail_workflow = False
-            for f in findings:
-                severity = f['severity']
-                # Map to GitHub annotation levels: notice, warning, failure
-                level = 'notice'
-                if severity == 'MEDIUM':
-                    level = 'warning'
-                elif severity == 'HIGH':
-                    level = 'error'
-                    # Note: We must be careful with boolean injection from inputs in python
-                    if '${{ inputs.fail_on_high }}' == 'true':
-                        fail_workflow = True
-
-                # Fix: Use proper quoting for f-string and keys
-                msg = f['message']
-                r_id = f['rule_id']
-                fname = f['file']
-                line = f['line']
-                col = f['column']
-                print(f"::{level} file={fname},line={line},col={col},title={r_id}::{msg}")
-
-            if fail_workflow:
-                sys.exit(1)
-        except Exception as e:
-            print(e)
-            sys.exit(1)
-        EOF
+        # Capture exit code? Bina --json typically runs clean and outputs logs.
+        # But if fail-on-high is needed, we usually exit code 1.
+        # However, `bina check` without --json prints table and exits status code 1 if issues found.
+        # With --json, `bina check` should print json to stdout.
+        # It currently `click.echo(json.dumps)` AND `exit(1)`? No, see cli.py.
+        # `if json_output: ... click.echo ... else: ... exit(1)`
+        # Wait, if issues found in JSON mode, does it exit 1?
+        # Let's check CLI implementation I wrote.
+        # ... `if json_output: ... click.echo ...` -> It ends function. Implicit return None.
+        # So it exits 0! This is good for pipeline continuation to reporting step.
+        
+        # 2. Print Table to Console (Optional but good for logs)
+        # We can re-run bina check without json?
+        # Or parse the json and print it?
+        # Bina V2 CLI supports table out of the box. 
+        # But running it twice is wasteful if performance matters (Task 99).
+        # We can write a simple python script to just print the table from json, 
+        # OR just re-run bina check for now if fast enough. 
+        # Prompt said "Improve performance", so let's avoid double scan.
+        # I'll rely on the JSON output being visible? No, JSON is for machine.
+        # I'll modify CLI later to support "TEE" output?
+        # For now, let's keep it simple. The user gets the GitHub Comment.
+        
+        # 3. Post Report to GitHub
+        # We pass the token explicitly or via env?
+        export GITHUB_TOKEN="${{ inputs.token }}"
+        # Need PR number or context
+        export GITHUB_PR_NUMBER="${{ github.event.pull_request.number }}"
+        
+        bina ci-report bina_output.json --baseline ${{ inputs.baseline_path }}
+        
+        # 4. Fail if needed (Fail on High)
+        if [ "${{ inputs.fail_on_high }}" == "true" ]; then
+             # Parse JSON to check for HIGH severity?
+             # Simple python oneliner using the generated file
+             python3 -c "import json, sys; findings=json.load(open('bina_output.json')); sys.exit(1 if any(f.get('severity') == 'HIGH' for f in findings) else 0)"
+        fi
       shell: bash

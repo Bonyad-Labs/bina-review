@@ -8,7 +8,7 @@ build/
 dist/
 *.egg-info/
 .eggs/
-Prompts.md
+Prompt*.md
 
 # Virtual Environments
 .env
