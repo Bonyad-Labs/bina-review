@@ -78,6 +78,13 @@ def check(path, json_output, config_path, baseline_path, generate_baseline, show
 
     findings = engine.scan_path(path)
     
+    # SARIF Export
+    if config.sarif_enabled:
+        from .integrations.sarif_reporter import SarifReporter
+        sarif_reporter = SarifReporter(config.sarif_path)
+        sarif_reporter.save_report(findings)
+        console.print(f"[bold green]SARIF report saved to {config.sarif_path}[/bold green]")
+
     if generate_baseline:
         baseline_manager.save(findings)
         if not json_output:
@@ -113,14 +120,6 @@ def check(path, json_output, config_path, baseline_path, generate_baseline, show
         
         console.print(table)
         
-        # SARIF Export
-        if config.sarif_enabled:
-            from .integrations.sarif_reporter import SarifReporter
-            sarif_reporter = SarifReporter(config.sarif_path)
-            sarif_reporter.save_report(findings)
-            if not json_output:
-                console.print(f"[bold green]SARIF report saved to {config.sarif_path}[/bold green]")
-
         # Exit with error code if issues found
         exit(1)
 
