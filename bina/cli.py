@@ -176,5 +176,39 @@ def ci_report(report_path, baseline_path):
     reporter = GitHubReporter(token, repo, pr_number)
     reporter.post_summary(findings, baseline_findings_proxy)
 
+@main.command()
+@click.argument("report_path")
+def view_report(report_path):
+    """View a saved JSON report as a table."""
+    import json
+    try:
+        with open(report_path, 'r') as f:
+            data = json.load(f)
+        
+        if not data:
+            console.print("[bold green]No issues found in report.[/bold green]")
+            return
+
+        table = Table(title=f"Analysis Findings from {report_path}")
+        table.add_column("File", style="cyan")
+        table.add_column("Rule", style="magenta")
+        table.add_column("Severity", style="red")
+        table.add_column("Message", style="white")
+        table.add_column("Suggestion", style="green")
+
+        for f in data:
+            table.add_row(
+                f"{f['file']}:{f['line']}",
+                f['rule_id'],
+                f['severity'],
+                f['message'],
+                f.get('suggestion', "")
+            )
+        
+        console.print(table)
+    except Exception as e:
+        console.print(f"[bold red]Error loading report:[/bold red] {e}")
+        exit(1)
+
 if __name__ == "__main__":
     main()

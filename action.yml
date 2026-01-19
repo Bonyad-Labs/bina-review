@@ -57,17 +57,12 @@ runs:
         # ... `if json_output: ... click.echo ...` -> It ends function. Implicit return None.
         # So it exits 0! This is good for pipeline continuation to reporting step.
         
-        # 2. Print Table to Console (Optional but good for logs)
-        # We can re-run bina check without json?
-        # Or parse the json and print it?
-        # Bina V2 CLI supports table out of the box. 
-        # But running it twice is wasteful if performance matters (Task 99).
-        # We can write a simple python script to just print the table from json, 
-        # OR just re-run bina check for now if fast enough. 
-        # Prompt said "Improve performance", so let's avoid double scan.
-        # I'll rely on the JSON output being visible? No, JSON is for machine.
-        # I'll modify CLI later to support "TEE" output?
-        # For now, let's keep it simple. The user gets the GitHub Comment.
+        # 2. Print Table to Console
+        if [ -f bina_output.json ]; then
+            echo "::group::Bina Analysis Report"
+            bina view-report bina_output.json
+            echo "::endgroup::"
+        fi
         
         # 3. Post Report to GitHub (Only on PRs)
         if [ "${{ github.event_name }}" == "pull_request" ]; then

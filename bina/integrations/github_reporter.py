@@ -15,8 +15,10 @@ class GitHubReporter:
             "Accept": "application/vnd.github.v3+json"
         }
 
-    def post_summary(self, findings: List[Finding], baseline_findings: List[Finding] = []):
+    def post_summary(self, findings: List[Finding], baseline_findings: List[Finding] = None):
         """Post or update a summary comment on the PR."""
+        if baseline_findings is None:
+            baseline_findings = []
         body = self._generate_markdown_summary(findings, baseline_findings)
         
         # 1. Check for existing comment
