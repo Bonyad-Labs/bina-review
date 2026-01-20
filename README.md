@@ -37,7 +37,7 @@ jobs:
           fail_on_high: true
 ```
 
-## ## Why Bina?
+## Why Bina?
 Bina differs from other static analysis tools by prioritizing developer trust and predictability:
 - **Deterministic**: No AI or heuristics. Results are predictable and can be reproduced locally.
 - **Baseline Mode**: Ideal for legacy codebases. Focus only on new issues by ignoring existing technical debt.
@@ -98,6 +98,20 @@ Bina allows you to enable sets of rules using **profiles**. You can choose from 
 | `strict` | All categories |
 | `security` | `correctness`, `security` |
 | `performance` | `performance` |
+
+## 📚 Documentation
+
+- 📖 [Rule documentation and examples](docs/rules.md)
+- 🧩 [Custom rule authoring guide](docs/custom_rules.md)
+- ⚙️ [Configuration reference](docs/configuration.md)
+
+👉 See the `/docs` directory for more details.
+
+## Stability & Versioning
+
+Bina follows semantic versioning.
+- Minor versions may add new rules
+- Patch versions never change rule behavior
 
 ## License
 
