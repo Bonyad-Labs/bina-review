@@ -121,58 +121,66 @@ class UncheckedNoneRule(BaseRule):
                          if stmt.target.id in current_dangerous:
                              current_dangerous.remove(stmt.target.id)
             
-            # 2. Check for De-referencing "dangerous" vars
-            self.check_dereference(stmt, current_dangerous)
-            
-            # 3. Handle Control Flow (If guards)
+            # 2. Handle Control Flow (If guards and standard recursion)
             if isinstance(stmt, ast.If):
-                guard_var, is_none_check = self.analyze_guard(stmt.test)
+                # 2.1 Check the test expression for None dereferences
+                self.check_dereference(stmt.test, current_dangerous)
                 
+                guard_var, is_none_check = self.analyze_guard(stmt.test)
                 if guard_var and guard_var in current_dangerous:
                     if is_none_check:
-                        # `if x is None`:
-                        # Inside body, x is still None (dangerous).
+                        # `if x is None`: Body is dangerous, orelse is safe
                         self.scan_block(stmt.body, current_dangerous)
-                        
-                        # If body terminates, then AFTER blocks, x is SAFE (Early Return).
                         if self.block_terminates(stmt.body):
                             current_dangerous.remove(guard_var)
-                            
-                        # Recurse into else: x is SAFE in else (implied `is not None`)
                         if stmt.orelse:
                             safe_in_else = set(current_dangerous)
                             if guard_var in safe_in_else:
                                 safe_in_else.remove(guard_var)
                             self.scan_block(stmt.orelse, safe_in_else)
-
                     else: 
-                        # `if x is not None`:
-                        # Inside body, x is SAFE.
+                        # `if x is not None`: Body is safe, orelse is dangerous
                         safe_in_body = set(current_dangerous)
                         if guard_var in safe_in_body:
                             safe_in_body.remove(guard_var)
                         self.scan_block(stmt.body, safe_in_body)
-                        
-                        # Inside else, x is still dangerous
                         if stmt.orelse:
                             self.scan_block(stmt.orelse, current_dangerous)
-                            
-                        # After block? Usually doesn't change outer state unless assigned.
-                        pass
                 else:
-                    # Standard recursion for non-guard Ifs
+                    # Standard recursion
                     self.scan_block(stmt.body, current_dangerous)
                     if stmt.orelse:
                         self.scan_block(stmt.orelse, current_dangerous)
 
-            # For loops, While loops, etc. -> naive recursion
-            elif isinstance(stmt, (ast.For, ast.While, ast.Try)):
+            elif isinstance(stmt, ast.While):
+                self.check_dereference(stmt.test, current_dangerous)
                 self.scan_block(stmt.body, current_dangerous)
                 if stmt.orelse:
                     self.scan_block(stmt.orelse, current_dangerous)
+
+            elif isinstance(stmt, ast.For):
+                self.check_dereference(stmt.iter, current_dangerous)
+                self.scan_block(stmt.body, current_dangerous)
+                if stmt.orelse:
+                    self.scan_block(stmt.orelse, current_dangerous)
+
+            elif isinstance(stmt, ast.Try):
+                # We simplified: just scan all blocks (body, handlers, orelse, finalbody)
+                self.scan_block(stmt.body, current_dangerous)
+                for handler in stmt.handlers:
+                    self.scan_block(handler.body, current_dangerous)
+                if stmt.orelse:
+                    self.scan_block(stmt.orelse, current_dangerous)
+                if stmt.finalbody:
+                    self.scan_block(stmt.finalbody, current_dangerous)
+            
+            else:
+                # 3. For all other statements, check for dereferences normally
+                self.check_dereference(stmt, current_dangerous)
     
     def analyze_guard(self, test_node):
         """Returns (variable_name, is_check_for_none_value)"""
+        # 1. Standard `is None` and `is not None`
         if isinstance(test_node, ast.Compare) and len(test_node.ops) == 1:
             op = test_node.ops[0]
             left = test_node.left
@@ -183,6 +191,16 @@ class UncheckedNoneRule(BaseRule):
                     return (left.id, True)
                 elif isinstance(op, ast.IsNot):
                     return (left.id, False)
+        
+        # 2. Truthy checks: `if x:`
+        if isinstance(test_node, ast.Name):
+            return (test_node.id, False)
+        
+        # 3. Falsy checks: `if not x:`
+        if isinstance(test_node, ast.UnaryOp) and isinstance(test_node.op, ast.Not):
+            if isinstance(test_node.operand, ast.Name):
+                return (test_node.operand.id, True)
+
         return (None, None)
 
     def block_terminates(self, stmts):
@@ -193,8 +211,25 @@ class UncheckedNoneRule(BaseRule):
         return False
 
     def check_dereference(self, node, dangerous_vars):
-         # We walk the subtree properly, but careful about context
+         # Handle short-circuiting in boolean expressions: `if x is not None and x.attr`
+         if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.And):
+             current = set(dangerous_vars)
+             for val in node.values:
+                 self.check_dereference(val, current)
+                 # After checking this segment, see if it provides a guard for the next ones
+                 guard_var, is_none_check = self.analyze_guard(val)
+                 if guard_var and guard_var in current and not is_none_check:
+                     current.remove(guard_var)
+             return
+
+         # We walk the subtree properly, but careful about context.
+         # We MUST NOT walk into handles of control flow nodes that we manage
+         # via scan_block (body, orelse, finalbody).
          for child in ast.walk(node):
+             # Skip blocks if we are looking at the control flow node itself
+             if isinstance(node, (ast.If, ast.For, ast.While, ast.Try)) and child == node:
+                 continue
+             
              if isinstance(child, ast.Attribute) and isinstance(child.value, ast.Name):
                  if child.value.id in dangerous_vars:
                      self.report(
