@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.3] - 2026-01-23
+
+### 🚀 Improved Logical Analysis & Multi-Path Support
+- **Multi-Path Support**: The `bina check` command now accepts multiple files and directories in a single command (e.g., `bina check src/ scripts/`).
+- **Enhanced Unchecked None (L003)**: Significantly improved accuracy by supporting:
+    - Truthy checks (`if x:`) as valid None guards.
+    - Awareness of short-circuiting logic (e.g., `if x and x.attr`).
+    - Fixed false positive when walking nested control flow blocks.
+- **Smarter Unique/Sorted Promise (L002)**: Now recognizes logical uniqueness in ID generators that use string concatenation or f-strings with multiple variables (e.g., `f"{name}_{id}"`).
+- **Comprehensive Documentation**: Updated `README.md` with multi-path usage examples and real-world scan results from **FastAPI** and **Requests**.
+- **GitHub Action Update**: The `path` input in the GitHub Action now supports space-separated multiple paths.
+
 ## [v0.3.2] - 2026-01-19
 
 ### 🚀 Version 0.3.2: SARIF Output Support
