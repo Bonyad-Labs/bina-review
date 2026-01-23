@@ -61,19 +61,36 @@ class SortedUniquePromiseRule(BaseRule):
         if not (claims_sorted or claims_unique):
             return
 
-        # Check body for usage of sort mechanisms
+        # Check body for usage of sort/uniqueness mechanisms
         usage_found = False
         for child in ast.walk(node):
+            # 1. Standard library calls and common uniqueness indicators
             if isinstance(child, ast.Call) and isinstance(child.func, ast.Name):
                 if claims_sorted and child.func.id in ("sorted", "sort"):
                     usage_found = True
-                if claims_unique and child.func.id in ("set", "unique", "distinct"):
+                if claims_unique and child.func.id in ("set", "unique", "distinct", "uuid4", "sha256", "md5"):
                     usage_found = True
             elif isinstance(child, ast.Call) and isinstance(child.func, ast.Attribute):
                 if claims_sorted and child.func.attr == "sort":
                     usage_found = True
-                if claims_unique and child.func.attr == "unique":
+                if claims_unique and child.func.attr in ("unique", "distinct"):
                     usage_found = True
+            
+            # 2. Logical uniqueness: ID generation via concatenation/formatting
+            if claims_unique and not usage_found:
+                if isinstance(child, ast.JoinedStr):
+                    # Count variables/attributes being formatted into the string
+                    vars_count = sum(1 for v in child.values if isinstance(v, ast.FormattedValue))
+                    if vars_count >= 2:
+                        usage_found = True
+                elif isinstance(child, ast.BinOp) and isinstance(child.op, ast.Add):
+                    # Check for chains of addition involving multiple variables/attributes
+                    vars_in_concat = [n for n in ast.walk(child) if isinstance(n, (ast.Name, ast.Attribute))]
+                    if len(vars_in_concat) >= 2:
+                        usage_found = True
+
+            if usage_found:
+                break
 
         if not usage_found:
              self.report(
