@@ -45,6 +45,18 @@ jobs:
 - Incorrect exception handling patterns
 - Risky control-flow constructs
 
+## 🌍 Real World Examples
+
+Bina is designed to be high-precision and stable across major open-source projects.
+
+### [FastAPI](https://github.com/fastapi/fastapi)
+Scanning the core FastAPI package reveals complex logic and potential improvements:
+![Bina running against FastAPI](docs/images/fastapi_scan.png)
+
+### [Requests](https://github.com/psf/requests)
+Running Bina against the popular Requests library confirms code quality and logical consistency:
+![Bina running against Requests](docs/images/requests_scan.png)
+
 ### 🤔 Why not just use linters or AI tools?
 
 - **Linters** focus on style, not logic
