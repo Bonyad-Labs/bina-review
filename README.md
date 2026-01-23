@@ -51,11 +51,21 @@ Bina is designed to be high-precision and stable across major open-source projec
 
 ### [FastAPI](https://github.com/fastapi/fastapi)
 Scanning the core FastAPI package reveals complex logic and potential improvements:
-![Bina running against FastAPI](docs/images/fastapi_scan.png)
+
+#### Local Scan Results
+![Bina running against FastAPI Locally](docs/images/fastapi_scan.png)
+
+#### GitHub Action PR Report
+![Bina GitHub Action report for FastAPI](docs/images/fastapi_action.png)
 
 ### [Requests](https://github.com/psf/requests)
 Running Bina against the popular Requests library confirms code quality and logical consistency:
-![Bina running against Requests](docs/images/requests_scan.png)
+
+#### Local Scan Results
+![Bina running against Requests Locally](docs/images/requests_scan.png)
+
+#### GitHub Action PR Report
+![Bina GitHub Action report for Requests](docs/images/requests_action.png)
 
 ### 🤔 Why not just use linters or AI tools?
 
