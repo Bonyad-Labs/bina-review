@@ -29,7 +29,7 @@ def main():
     pass
 
 @main.command()
-@click.argument("path", required=False, default=".")
+@click.argument("paths", nargs=-1)
 @click.option("--json", "json_output", is_flag=True, help="Output in JSON format")
 @click.option("--config", "config_path", default="bina.yaml", help="Path to configuration file")
 @click.option("--baseline", "baseline_path", default="bina-report-baseline.json", help="Path to baseline file")
@@ -37,10 +37,14 @@ def main():
 @click.option("--show-baseline", is_flag=True, help="Show baseline issues in report")
 @click.option("--profile", help="Rule profile to use (e.g., security, strict)")
 @click.option("--sarif", "sarif_out", help="Output findings in SARIF format to the specified path")
-def check(path, json_output, config_path, baseline_path, generate_baseline, show_baseline, profile, sarif_out):
-    """Run static analysis on the given path."""
+def check(paths, json_output, config_path, baseline_path, generate_baseline, show_baseline, profile, sarif_out):
+    """Run static analysis on the given paths."""
     from .core.config import Config
     from .core.baseline import BaselineManager
+
+    # Default to current directory if no paths provided
+    if not paths:
+        paths = (".",)
 
     # Load Config
     config = Config.load(config_path)
@@ -55,28 +59,18 @@ def check(path, json_output, config_path, baseline_path, generate_baseline, show
     if not generate_baseline:
         baseline_manager.load()
 
-    # Initialize Engine with config and baseline assumption
-    # Note: Engine handles filtering if we pass the manager. 
-    # But strictly speaking, if show_baseline is True, we might NOT want to filter.
-    # So we pass baseline_manager only if we want filtering enabled?
-    # Or Engine Logic: if manager passed, it filters.
-    # Let's control filtering here explicitly or pass flag to engine?
-    # Engine signature: Engine(config, baseline_manager).
-    # If we pass baseline_manager, Engine filters.
-    # So if show_baseline is True, we could pass None, OR modify Engine to accept strict filter flag.
-    # Easier: Pass baseline_manager, but instruct it not to filter? 
-    # Or just don't pass it if show_baseline is True?
-    # But we need baseline_manager loaded to identify "new" vs "old" in summary later if we want advanced reporting.
-    # For now (MVP V2), if show_baseline is True, let's just NOT pass the manager to engine for filtering.
-    
     engine_manager = baseline_manager if (not show_baseline and not generate_baseline) else None
-    
     engine = Engine(config=config, baseline_manager=engine_manager)
     
     if not json_output and not generate_baseline:
-        console.print(f"[bold blue]Bina[/bold blue] scanning: {path}...")
+        paths_str = ", ".join(paths)
+        console.print(f"[bold blue]Bina[/bold blue] scanning: {paths_str}...")
 
-    findings = engine.scan_path(path)
+    all_findings = []
+    for path in paths:
+        all_findings.extend(engine.scan_path(path))
+    
+    findings = all_findings
     
     # SARIF Export
     if config.sarif_enabled:

@@ -78,7 +78,7 @@ Bina is **NOT**:
 
 | Input | Description | Default |
 | --- | --- | --- |
-| `path` | Path to the directory or file to scan. | `.` |
+| `path` | Path(s) to scan (space-separated for multiple paths). | `.` |
 | `fail_on_high` | If `true`, the action fails if any HIGH severity issues are found. | `true` |
 | `config_path` | Path to the `bina.yaml` configuration file. | `bina.yaml` |
 | `baseline_path` | Path to the baseline report file. | `bina-report-baseline.json` |
@@ -92,8 +92,8 @@ Run Bina on your local machine using the CLI:
 # Install the tool
 pip install bina-review
 
-# Scan a directory
-bina check .
+# Scan one or more directories/files
+bina check src/ scripts/ utils.py
 
 # Scan with a specific profile
 bina check . --profile strict
