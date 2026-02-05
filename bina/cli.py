@@ -97,11 +97,11 @@ def check(paths, json_output, config_path, baseline_path, generate_baseline, sho
             return
 
         table = Table(title="Analysis Findings")
-        table.add_column("File", style="cyan")
+        table.add_column("File", style="cyan", overflow="fold")
         table.add_column("Rule", style="magenta")
         table.add_column("Severity", style="red")
-        table.add_column("Message", style="white")
-        table.add_column("Suggestion", style="green")
+        table.add_column("Message", style="white", overflow="fold")
+        table.add_column("Suggestion", style="green", overflow="fold")
 
         for f in findings:
             table.add_row(

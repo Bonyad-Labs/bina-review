@@ -9,6 +9,7 @@ dist/
 *.egg-info/
 .eggs/
 Prompt*.md
+project*
 
 # Virtual Environments
 .env

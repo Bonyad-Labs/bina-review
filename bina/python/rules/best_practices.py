@@ -39,7 +39,29 @@ class SilentExceptionRule(BaseRule):
     severity = Severity.HIGH
     category = "maintainability"
 
-    def visit_ExceptHandler(self, node: ast.ExceptHandler):
+    def visit_Try(self, node: ast.Try):
+        # Heuristic 1: skip reporting if the try block has an else block
+        # (indicates intentional control flow where failure is handled by lack of else)
+        if node.orelse:
+            self.generic_visit(node)
+            return
+
+        # Heuristic 2: skip reporting if the try body is a single 'Return', 'Assign', or 'Call'
+        # (indicates a "Try-Get" or "Try-Execute" pattern)
+        if len(node.body) == 1:
+            stmt = node.body[0]
+            if isinstance(stmt, (ast.Return, ast.Assign, ast.AnnAssign, ast.Expr)):
+                self.generic_visit(node)
+                return
+
+        # visit handlers to report if necessary
+        for handler in node.handlers:
+            self.check_swallow(handler)
+        
+        # Always visit recursively for nested cases
+        self.generic_visit(node)
+
+    def check_swallow(self, node: ast.ExceptHandler):
         # Check for bare except or except Exception
         is_bare = node.type is None
         is_exception = False
@@ -58,6 +80,11 @@ class SilentExceptionRule(BaseRule):
                         node=node,
                         suggestion="Add a logging statement or specific exception handling logic."
                     )
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler):
+        # We handle this manually in visit_Try to avoid double reporting
+        # and to respect Try-level heuristics.
+        self.generic_visit(node)
 
 class ResourceCleanupRule(BaseRule):
     id = "B003"
